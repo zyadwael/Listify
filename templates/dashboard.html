@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List Dashboard</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="text-center">To-Do List Dashboard</h2>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <a href="{{ url_for('dashboard', offset=offset-1) }}" class="btn btn-secondary">Yesterday</a>
+    <a href="{{ url_for('dashboard', offset=0) }}" class="btn btn-primary">Today</a>
+    <a href="{{ url_for('dashboard', offset=offset+1) }}" class="btn btn-secondary">Tomorrow</a>
+</div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4>My Tasks</h4>
+            </div>
+            <div class="card-body">
+                {% if tasks %}
+                    <ul class="list-group">
+                        {% for task in tasks %}
+                            {% set task_date = task.date %}
+                            {% set is_overdue = task_date < current_date %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div class="task-container {% if is_overdue %}overdue{% endif %}">
+                                    <input type="checkbox" class="task-checkbox" data-task-id="{{ task.id }}" {% if task.done == 'yes' %}checked{% endif %}>
+                                    <span class="task-text {% if task.done == 'yes' %}completed-task{% endif %}">{{ task.task }}</span>
+                                    {% if is_overdue %}
+                                        <span class="overdue-date">({{ task_date }})</span>
+                                    {% endif %}
+                                </div>
+                                <div class="task-actions">
+                                    <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editTaskModal" data-task-id="{{ task.id }}" data-task-content="{{ task.task }}" data-task-date="{{ task.date }}">Edit</button>
+                                    <form method="POST" action="{{ url_for('delete_task', task_id=task.id) }}" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                    </form>
+                                    <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#addSubtaskModal" data-task-id="{{ task.id }}">Add Subtask</button>
+                                </div>
+                            </li>
+                            <!-- Subtasks List under the task -->
+<ul class="list-group subtask mt-2">
+    {% for subtask in subtasks %}
+        {% if subtask.task_id == task.id %}
+            <li class="list-group-item d-flex justify-content-between align-items-center {% if is_overdue %}overdue_sub{% endif %} {% if subtask.done == 'yes' %}completed{% endif %}">
+                <input type="checkbox" class="subtask-checkbox" data-subtask-id="{{ subtask.id }}" {% if subtask.done == 'yes' %}checked{% endif %}>
+                <span class="{% if subtask.done == 'yes' %}completed-task{% endif %}">{{ subtask.task }}</span>
+                <div class="task-actions">
+                    <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editSubtaskModal" data-subtask-id="{{ subtask.id }}" data-subtask-content="{{ subtask.task }}">Edit</button>
+                    <form method="POST" action="{{ url_for('delete_subtask', subtask_id=subtask.id) }}" style="display: inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </div>
+            </li>
+        {% endif %}
+    {% endfor %}
+</ul>
+
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No tasks for today. Add a new task above.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Button to trigger the Add Task Modal -->
+        <div class="text-center mt-4">
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addTaskModal">Add New Task</button>
+        </div>
+
+        <!-- Add Task Modal -->
+        <div class="modal fade" id="addTaskModal" tabindex="-1" aria-labelledby="addTaskModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <form method="POST" action="{{ url_for('add_task') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="addTaskModalLabel">Add New Task</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="task">Task</label>
+                                <input type="text" class="form-control" id="task" name="task" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="date">Date</label>
+                                <input type="date" class="form-control" id="date" name="date" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save Task</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Task Modal -->
+        <div class="modal fade" id="editTaskModal" tabindex="-1" aria-labelledby="editTaskModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <form method="POST" action="{{ url_for('edit_task') }}">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editTaskModalLabel">Edit Task</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="task_id" name="task_id">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <div class="form-group">
+                                <label for="task">Task</label>
+                                <input type="text" class="form-control" id="edit_task" name="task" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="date">Date</label>
+                                <input type="date" class="form-control" id="edit_date" name="date" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+        <!-- Add Subtask Modal -->
+        <div class="modal fade" id="addSubtaskModal" tabindex="-1" aria-labelledby="addSubtaskModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <form method="POST" action="{{ url_for('add_subtask') }}">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="addSubtaskModalLabel">Add New Subtask</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="task_id" name="task_id">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <div class="form-group">
+                                <label for="subtask">Subtask</label>
+                                <input type="text" class="form-control" id="subtask" name="task" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save Subtask</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Subtask Modal -->
+        <div class="modal fade" id="editSubtaskModal" tabindex="-1" aria-labelledby="editSubtaskModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <form method="POST" action="{{ url_for('edit_subtask') }}">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editSubtaskModalLabel">Edit Subtask</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="subtask_id" name="subtask_id">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <div class="form-group">
+                                <label for="subtask">Subtask</label>
+                                <input type="text" class="form-control" id="edit_subtask" name="task" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include jQuery and Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Populate the edit task modal with the current task details
+            $('#editTaskModal').on('show.bs.modal', function(event) {
+                var button = $(event.relatedTarget);
+                var taskId = button.data('task-id');
+                var taskContent = button.data('task-content');
+                var taskDate = button.data('task-date');
+
+                var modal = $(this);
+                modal.find('#task_id').val(taskId);
+                modal.find('#edit_task').val(taskContent);
+                modal.find('#edit_date').val(taskDate);
+            });
+
+            // Populate the add subtask modal with the current task id
+            $('#addSubtaskModal').on('show.bs.modal', function(event) {
+                var button = $(event.relatedTarget);
+                var taskId = button.data('task-id');
+
+                var modal = $(this);
+                modal.find('#task_id').val(taskId);
+            });
+
+            // Populate the edit subtask modal with the current subtask details
+            $('#editSubtaskModal').on('show.bs.modal', function(event) {
+                var button = $(event.relatedTarget);
+                var subtaskId = button.data('subtask-id');
+                var subtaskContent = button.data('subtask-content');
+
+                var modal = $(this);
+                modal.find('#subtask_id').val(subtaskId);
+                modal.find('#edit_subtask').val(subtaskContent);
+            });
+
+            // AJAX call for task completion
+            $('.task-checkbox').change(function() {
+                var taskId = $(this).data('task-id');
+                var done = $(this).is(':checked') ? 'yes' : 'no';
+
+                $.ajax({
+                    url: '{{ url_for('update_task_status') }}',
+                    method: 'POST',
+                    data: {
+                        task_id: taskId,
+                        done: done,
+                        csrf_token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            location.reload();
+                        }
+                    }
+                });
+            });
+
+            // AJAX call for subtask completion
+            $('.subtask-checkbox').change(function() {
+                var subtaskId = $(this).data('subtask-id');
+                var done = $(this).is(':checked') ? 'yes' : 'no';
+
+                $.ajax({
+                    url: '{{ url_for('update_subtask_status') }}',
+                    method: 'POST',
+                    data: {
+                        subtask_id: subtaskId,
+                        done: done,
+                        csrf_token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        if (response.status == 'success') {
+                            location.reload();
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+        body {
+            background-color: #DFD3C3;
+            color: #333;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .card {
+            border: none;
+            margin-top: 20px;
+        }
+        .card-header {
+            background-color: #DFD3C3;
+            border-bottom: none;
+        }
+        .card-header h4 {
+            margin: 0;
+            color: #333;
+        }
+        .btn-primary, .btn-success, .btn-danger {
+            background-color: #DFD3C3;
+            border: none;
+            color: #333;
+        }
+        .btn-primary:hover, .btn-success:hover, .btn-danger:hover {
+            background-color: #c5b3a1;
+            color: #fff;
+        }
+        .list-group-item {
+            border: none;
+            border-bottom: 1px solid #ccc;
+        }
+        .completed {
+            text-decoration: line-through;
+            color: grey;
+        }
+        .subtask {
+            font-size: 0.9rem; /* Smaller font size for subtasks */
+            margin-left: 100px; /* Indent subtasks */
+        }
+        .completed {
+            text-decoration: line-through;
+        }
+        .overdue {
+            color: red; /* Red color for overdue tasks */
+        }
+        .task-container {
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center align tasks */
+            flex-direction: row; /* Horizontal alignment */
+        }
+        .task-text {
+            margin-left: 400px; /* Space between task text and date */
+            align-text:center;
+        }
+        .overdue-date {
+            color: red; /* Red color for the date */
+            font-weight: bold; /* Make the date stand out */
+        }
+        .task-actions {
+            display: flex;
+            align-items: center;
+            gap: 5px; /* Space between buttons */
+        }
+        .completed-task {
+    text-decoration: line-through;
+}
+
+
+
+/* Add CSS for overdue subtasks */
+.overdue_sub {
+            color: red; /* Red color for overdue tasks */
+}
+
+.overdue_sub .task-text {
+            color: red; /* Red color for overdue tasks */
+}
