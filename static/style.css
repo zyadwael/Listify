@@ -37,10 +37,35 @@
             text-decoration: line-through;
             color: grey;
         }
-        .subtask {
-            font-size: 0.9rem; /* Smaller font size for subtasks */
-            margin-left: 100px; /* Indent subtasks */
+        .subtask-wrapper {
+            width: 100%; /* Full width of the parent container */
+            display: flex;
+            justify-content: center; /* Center horizontally */
+            padding-top: 10px; /* Optional: space above the subtasks */
         }
+
+        .custom-subtask-list {
+            list-style: none; /* Remove default list styles */
+            padding: 0; /* Remove default padding */
+            margin: 0; /* Remove default margin */
+            width: 100%; /* Full width of the wrapper */
+            max-width: 600px; /* Optional: limit the width for better readability */
+        }
+
+        .custom-subtask-item {
+            font-size: 1.2rem; /* Increase font size */
+            padding: 10px 15px; /* Increase padding for each item */
+        }
+
+        .custom-subtask-item input[type="checkbox"] {
+            transform: scale(1.5); /* Make checkboxes larger */
+        }
+
+        .custom-subtask-item span {
+            flex: 1;
+            margin-left: 10px; /* Add space between checkbox and text */
+        }
+
         .completed {
             text-decoration: line-through;
         }
@@ -80,3 +105,161 @@
 .overdue_sub .task-text {
             color: red; /* Red color for overdue tasks */
 }
+
+
+        .sidebar {
+            width: 250px;
+            background-color: #543310;
+            color: #ecf0f1;
+            padding: 20px;
+            box-sizing: border-box;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            transform: translateX(0);
+            transition: transform 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sidebar.closed {
+            transform: translateX(-100%);
+        }
+
+                .sidebar ul {
+            list-style: none;
+            padding: 0;
+            width: 100%;
+        }
+
+        .sidebar ul li {
+            margin: 15px 0;
+            border-bottom: 1px solid #ecf0f1;
+            padding-bottom: 5px;
+        }
+
+        .sidebar ul li:last-child {
+            border-bottom: none;
+        }
+
+        .sidebar ul li a {
+            color: #ecf0f1;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+        }
+
+        .sidebar ul li a:hover {
+            text-decoration: underline;
+        }
+
+
+                /* Media Queries for Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            .sidebar.closed {
+                display: block;
+                position: absolute;
+                width: 200px;
+                height: 100vh;
+                z-index: 1000;
+                background-color: #f8f9fa;
+            }
+            .main-content {
+                padding-left: 20px;
+            }
+            .main-content.expanded {
+                margin-left: 200px;
+            }
+        }
+
+
+        .toggle-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background-color: #543310;
+            color: #ecf0f1;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            z-index: 1001; /* Ensure the button is above all other elements */
+            border-radius: 5px;
+        }
+
+
+
+/* Hide the default checkbox */
+.task-checkbox {
+    display: none;
+}
+
+/* Style the custom checkbox for tasks */
+.task-checkbox + .custom-checkbox {
+    position: relative;
+    display: inline-block;
+    width: 20px; /* Size of the checkbox */
+    height: 20px; /* Size of the checkbox */
+    border: 2px solid #333; /* Border color */
+    border-radius: 3px; /* Rounded corners */
+    background-color: #fff; /* Background color */
+    cursor: pointer; /* Pointer cursor on hover */
+}
+
+/* Create the checkmark for tasks */
+.task-checkbox + .custom-checkbox:after {
+    content: ''; /* Empty content */
+    position: absolute; /* Position inside the checkbox */
+    left: 4px; /* Adjusted position from the left */
+    top: 7px; /* Adjusted position from the top */
+    width: 8px; /* Width of the checkmark */
+    height: 12px; /* Height of the checkmark */
+    border: solid; /* Border style */
+    border-width: 0 2px 2px 0; /* Checkmark border width */
+    border-color: transparent transparent #000 transparent; /* Checkmark color */
+    transform: rotate(45deg); /* Rotate to form a checkmark */
+    opacity: 0; /* Initially hidden */
+}
+
+/* Show the checkmark when checked */
+.task-checkbox:checked + .custom-checkbox:after {
+    opacity: 1; /* Show the checkmark */
+}
+
+
+            /* Style checkboxes based on priority */
+            .low + .custom-checkbox {
+                border-color: green;
+            }
+
+            .medium + .custom-checkbox {
+                border-color: yellow;
+            }
+
+            .high + .custom-checkbox {
+                border-color: orange;
+            }
+
+            .urgent + .custom-checkbox {
+                border-color: red;
+            }
+
+            /* Debugging styles to verify class application */
+            .low {
+                border: 2px solid green;
+            }
+
+            .medium {
+                border: 2px solid yellow;
+            }
+
+            .high {
+                border: 2px solid orange;
+            }
+
+            .urgent {
+                border: 2px solid red;
+            }

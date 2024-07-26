@@ -50,6 +50,8 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     task = db.Column(db.String(100))
     done = db.Column(db.String(100))
+    description = db.Column(db.String(100))
+    priority = db.Column(db.String(100))
     date = db.Column(db.String(100))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
@@ -169,7 +171,9 @@ def add_task():
     task_content = request.form.get('task')
     task_date = request.form.get('date')
     done = "no"
-    new_task = Task(task=task_content, date=task_date, done=done ,user_id=current_user.id)
+    description = request.form.get("description")
+    priority = request.form.get("priority")
+    new_task = Task(task=task_content, date=task_date, done=done ,user_id=current_user.id ,description=description , priority=priority)
     db.session.add(new_task)
     db.session.commit()
     return redirect(url_for('dashboard'))
@@ -180,6 +184,8 @@ def edit_task():
     task_id = request.form.get('task_id')
     task = Task.query.get(task_id)
     task.task = request.form.get('task')
+    task.description = request.form.get('description')
+    task.priority = request.form.get('priority')
     task.date = request.form.get('date')
     db.session.commit()
     return redirect(url_for('dashboard'))
@@ -284,6 +290,17 @@ def update_subtask_status():
         # Log the exception and return a failure response
         app.logger.error(f'Error updating subtask status: {e}')
         return jsonify({'success': False, 'message': 'An error occurred'}), 500
+@app.route('/completed_tasks', methods=['GET', 'POST'])
+def completed_tasks():
+    if request.method == 'POST':
+        task_ids = request.form.getlist('task_ids')
+        Task.query.update({'completed': False})
+        Task.query.filter(Task.id.in_(task_ids)).update({'completed': True}, synchronize_session=False)
+        db.session.commit()
+        return redirect(url_for('completed_tasks'))
+
+    tasks = Task.query.all()
+    return render_template('completed_tasks.html', tasks=tasks)
 
 
 if __name__ == "__main__":

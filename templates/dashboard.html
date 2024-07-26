@@ -7,69 +7,80 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body onload="checkSidebarState()">
+    <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+    <div>
+        <div class="sidebar" id="sidebar">
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/completed_tasks">Completed Tasks</a></li>
+            </ul>
+        </div>
+    </div>
+
     <div class="container mt-5">
         <h2 class="text-center">To-Do List Dashboard</h2>
-
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <a href="{{ url_for('dashboard', offset=offset-1) }}" class="btn btn-secondary">Yesterday</a>
-    <a href="{{ url_for('dashboard', offset=0) }}" class="btn btn-primary">Today</a>
-    <a href="{{ url_for('dashboard', offset=offset+1) }}" class="btn btn-secondary">Tomorrow</a>
-</div>
-
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <a href="{{ url_for('dashboard', offset=offset-1) }}" class="btn btn-secondary">Yesterday</a>
+            <a href="{{ url_for('dashboard', offset=0) }}" class="btn btn-primary">Today</a>
+            <a href="{{ url_for('dashboard', offset=offset+1) }}" class="btn btn-secondary">Tomorrow</a>
+        </div>
         <div class="card mt-4">
             <div class="card-header">
                 <h4>My Tasks</h4>
             </div>
-            <div class="card-body">
-                {% if tasks %}
-                    <ul class="list-group">
-                        {% for task in tasks %}
-                            {% set task_date = task.date %}
-                            {% set is_overdue = task_date < current_date %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <div class="task-container {% if is_overdue %}overdue{% endif %}">
-                                    <input type="checkbox" class="task-checkbox" data-task-id="{{ task.id }}" {% if task.done == 'yes' %}checked{% endif %}>
-                                    <span class="task-text {% if task.done == 'yes' %}completed-task{% endif %}">{{ task.task }}</span>
-                                    {% if is_overdue %}
-                                        <span class="overdue-date">({{ task_date }})</span>
-                                    {% endif %}
-                                </div>
-                                <div class="task-actions">
-                                    <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editTaskModal" data-task-id="{{ task.id }}" data-task-content="{{ task.task }}" data-task-date="{{ task.date }}">Edit</button>
-                                    <form method="POST" action="{{ url_for('delete_task', task_id=task.id) }}" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                                    </form>
-                                    <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#addSubtaskModal" data-task-id="{{ task.id }}">Add Subtask</button>
-                                </div>
-                            </li>
-                            <!-- Subtasks List under the task -->
-<ul class="list-group subtask mt-2">
-    {% for subtask in subtasks %}
-        {% if subtask.task_id == task.id %}
-            <li class="list-group-item d-flex justify-content-between align-items-center {% if is_overdue %}overdue_sub{% endif %} {% if subtask.done == 'yes' %}completed{% endif %}">
-                <input type="checkbox" class="subtask-checkbox" data-subtask-id="{{ subtask.id }}" {% if subtask.done == 'yes' %}checked{% endif %}>
-                <span class="{% if subtask.done == 'yes' %}completed-task{% endif %}">{{ subtask.task }}</span>
-                <div class="task-actions">
-                    <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editSubtaskModal" data-subtask-id="{{ subtask.id }}" data-subtask-content="{{ subtask.task }}">Edit</button>
-                    <form method="POST" action="{{ url_for('delete_subtask', subtask_id=subtask.id) }}" style="display: inline;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                    </form>
-                </div>
-            </li>
-        {% endif %}
-    {% endfor %}
-</ul>
+<div class="card-body">
+    {% if tasks %}
+        <ul class="list-group">
+        {% for task in tasks %}
+            {% set task_date = task.date %}
+            {% set is_overdue = task_date < current_date %}
+            {% set priority_class = 'priority-' + task.priority.upper() %}
+                <li class="list-group-item d-flex flex-column align-items-start {{ task.priority|lower }}">
+                    <div class="task-container d-flex justify-content-between align-items-center w-100">
+                        <div class="d-flex align-items-center">
+                            <input type="checkbox" class="task-checkbox" id="task_{{ task.id }}" data-task-id="{{ task.id }}" {% if task.done == 'yes' %}checked{% endif %}>
+                            <label for="task_{{ task.id }}" class="custom-checkbox"></label>
+                            <span class="task-text {% if task.done == 'yes' %}completed-task{% endif %}">{{ task.task }}</span>
+                        </div>
+                        <div class="task-actions">
+                            <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editTaskModal" data-task-id="{{ task.id }}" data-task-content="{{ task.task }}" data-task-date="{{ task.date }}" data-task-priority="{{ task.priority }}">Edit</button>
+                            <form method="POST" action="{{ url_for('delete_task', task_id=task.id) }}" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                            <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#addSubtaskModal" data-task-id="{{ task.id }}">Add Subtask</button>
+                        </div>
+                    </div>
 
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p>No tasks for today. Add a new task above.</p>
-                {% endif %}
-            </div>
-        </div>
+                    <!-- Subtasks List under the task -->
+                    <div class="subtask-wrapper">
+                        <ul class="list-group subtask mt-2 custom-subtask-list">
+                            {% for subtask in subtasks %}
+                                {% if subtask.task_id == task.id %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center {% if is_overdue %}overdue_sub{% endif %} {% if subtask.done == 'yes' %}completed{% endif %} custom-subtask-item">
+                                        <input type="checkbox" class="subtask-checkbox" data-subtask-id="{{ subtask.id }}" {% if subtask.done == 'yes' %}checked{% endif %}>
+                                        <span class="{% if subtask.done == 'yes' %}completed-task{% endif %}">{{ subtask.task }}</span>
+                                        <div class="task-actions">
+                                            <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editSubtaskModal" data-subtask-id="{{ subtask.id }}" data-subtask-content="{{ subtask.task }}" data-subtask-priority="{{ subtask.priority }}">Edit</button>
+                                            <form method="POST" action="{{ url_for('delete_subtask', subtask_id=subtask.id) }}" style="display: inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                            </form>
+                                        </div>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No tasks for today. Add a new task above.</p>
+    {% endif %}
+</div>
+
 
         <!-- Button to trigger the Add Task Modal -->
         <div class="text-center mt-4">
@@ -94,8 +105,21 @@
                                 <input type="text" class="form-control" id="task" name="task" required>
                             </div>
                             <div class="form-group">
+                                <label for="description">Description</label>
+                                <input type="text" class="form-control" id="description" name="description" required>
+                            </div>
+                            <div class="form-group">
                                 <label for="date">Date</label>
                                 <input type="date" class="form-control" id="date" name="date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="priority">Priority</label>
+                                <select class="form-control" id="priority" name="priority" required>
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                    <option value="Urgent">Urgent</option>
+                                </select>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -126,8 +150,21 @@
                                 <input type="text" class="form-control" id="edit_task" name="task" required>
                             </div>
                             <div class="form-group">
+                                <label for="description">Description</label>
+                                <input type="text" class="form-control" id="edit_description" name="description" required>
+                            </div>
+                            <div class="form-group">
                                 <label for="date">Date</label>
                                 <input type="date" class="form-control" id="edit_date" name="date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="priority">Priority</label>
+                                <select class="form-control" id="edit_priority" name="priority" required>
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                    <option value="Urgent">Urgent</option>
+                                </select>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -138,7 +175,6 @@
                 </form>
             </div>
         </div>
-
 
         <!-- Add Subtask Modal -->
         <div class="modal fade" id="addSubtaskModal" tabindex="-1" aria-labelledby="addSubtaskModalLabel" aria-hidden="true">
@@ -196,24 +232,57 @@
             </div>
         </div>
     </div>
-
     <!-- Include jQuery and Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
+
+                function toggleSidebar() {
+            var sidebar = document.getElementById('sidebar');
+            var mainContent = document.getElementById('main-content');
+            if (sidebar.classList.contains('closed')) {
+                sidebar.classList.remove('closed');
+                mainContent.classList.remove('expanded');
+                console.log("Sidebar opened");
+            } else {
+                sidebar.classList.add('closed');
+                mainContent.classList.add('expanded');
+                console.log("Sidebar closed");
+            }
+        }
+
+        function checkSidebarState() {
+            var sidebar = document.getElementById('sidebar');
+            var mainContent = document.getElementById('main-content');
+            if (window.innerWidth <= 768) {
+                sidebar.classList.add('closed');
+                mainContent.classList.add('expanded');
+                console.log("Window resized to mobile view - Sidebar closed");
+            } else {
+                sidebar.classList.remove('closed');
+                mainContent.classList.remove('expanded');
+                console.log("Window resized to desktop view - Sidebar opened");
+            }
+        }
+
+        window.onresize = checkSidebarState;
+
         $(document).ready(function() {
             // Populate the edit task modal with the current task details
-            $('#editTaskModal').on('show.bs.modal', function(event) {
-                var button = $(event.relatedTarget);
-                var taskId = button.data('task-id');
-                var taskContent = button.data('task-content');
-                var taskDate = button.data('task-date');
+$('#editTaskModal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);
+    var taskId = button.data('task-id');
+    var taskContent = button.data('task-content');
+    var taskDate = button.data('task-date');
+    var taskPriority = button.data('task-priority');
 
-                var modal = $(this);
-                modal.find('#task_id').val(taskId);
-                modal.find('#edit_task').val(taskContent);
-                modal.find('#edit_date').val(taskDate);
-            });
+    var modal = $(this);
+    modal.find('.modal-body #task_id').val(taskId);
+    modal.find('.modal-body #edit_task').val(taskContent);
+    modal.find('.modal-body #edit_date').val(taskDate);
+    modal.find('.modal-body #edit_priority').val(taskPriority);
+});
+
 
             // Populate the add subtask modal with the current task id
             $('#addSubtaskModal').on('show.bs.modal', function(event) {
@@ -277,6 +346,18 @@
                 });
             });
         });
+
+
+
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.task-container').forEach(function(container) {
+        let priority = container.querySelector('.task-checkbox').dataset.taskPriority.toLowerCase();
+        container.closest('.list-group-item').classList.add(priority);
+    });
+});
+
     </script>
 </body>
 </html>
