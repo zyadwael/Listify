@@ -8,6 +8,9 @@ from datetime import datetime, timedelta
 from flask_mail import Mail, Message
 from flask_wtf.csrf import CSRFProtect
 import os
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 
 app = Flask(__name__)
@@ -18,14 +21,6 @@ csrf = CSRFProtect(app)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['WTF_CSRF_ENABLED'] = True
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USE_SSL'] = False
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
 
 # Initialize the SQLAlchemy part of the app instance
 db = SQLAlchemy(app)
@@ -90,15 +85,27 @@ admin.add_view(MyModelView(Task, db.session))
 admin.add_view(MyModelView(Subtask, db.session))
 admin.add_view(MyModelView(Section, db.session))
 
-# Function to send task reminder
-# def send_task_reminder(task, user):
-#     msg = Message(
-#         subject=f"Reminder: {task.task}",
-#         recipients=[user.email],
-#         sender=app.config['MAIL_DEFAULT_SENDER']  # Explicitly specifying the sender
-#     )
-#     msg.body = f"Hello {user.name}, do not forget you have a task: {task.task}."
-#     mail.send(msg)
+def send_email(to_email, subject, body):
+    from_email = 'zyadwael2009@gmail.com'
+    password = 'vglf vbhn yxuc jilg'
+
+    msg = MIMEMultipart()
+    msg['From'] = from_email
+    msg['To'] = to_email
+    msg['Subject'] = subject
+
+    msg.attach(MIMEText(body, 'plain'))
+
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(from_email, password)
+        text = msg.as_string()
+        server.sendmail(from_email, to_email, text)
+        server.quit()
+        print(f'Email sent to {to_email}')
+    except Exception as e:
+        print(f'Failed to send email to {to_email}. Error: {e}')
 
 @app.route("/", methods=['POST', 'GET'])
 def login():
@@ -168,6 +175,39 @@ def dashboard():
     # Convert task dates from string to date objects for comparison
     for task in tasks:
         task.date = datetime.strptime(task.date, '%Y-%m-%d').date()
+
+    # Filter out tasks and subtasks that are not done
+    undone_tasks = [task for task in tasks if task.done == 'no']
+    undone_subtasks = [subtask for subtask in subtasks if subtask.done == 'no']
+
+    if current_user.email:  # Ensure that the user has an email set
+        if undone_tasks or undone_subtasks:  # Send email only if there are undone tasks or subtasks
+            subject = "Tasks and Subtasks Notification"
+            body = f"""
+            You have {len(undone_tasks)} task(s) that are not done and {len(undone_subtasks)} subtask(s) that are not done.
+            Here is the update on your tasks and subtasks:
+
+            """
+
+            # Add undone tasks to the email body
+            for task in undone_tasks:
+                body += f"""
+                Task: {task.task}
+                Date: {task.date.strftime('%Y-%m-%d')}
+                Description: {task.description}
+                Priority: {task.priority}
+                Section ID: {task.section_id if task.section_id else 'None'}
+                """
+
+            # Add undone subtasks to the email body
+            for subtask in undone_subtasks:
+                body += f"""
+                Subtask: {subtask.task}
+                Parent Task ID: {subtask.task_id}
+                """
+
+            send_email(current_user.email, subject, body)
+
 
     return render_template('dashboard.html', tasks=tasks, subtasks=subtasks, offset=offset, current_date=current_date,sections=sections)
 
