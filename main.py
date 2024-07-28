@@ -45,6 +45,7 @@ class Users(UserMixin, db.Model):
     password = db.Column(db.String(100))
     email = db.Column(db.String(100), unique=True)
     phone_number = db.Column(db.String(1000), unique=True)
+    sections = db.relationship('Section', backref='user', lazy=True)
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -54,7 +55,7 @@ class Task(db.Model):
     priority = db.Column(db.String(100))
     date = db.Column(db.String(100))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-
+    section_id = db.Column(db.Integer, db.ForeignKey('section.id'))
 
 class Subtask(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -66,6 +67,12 @@ class Subtask(db.Model):
     def __repr__(self):
         return f'<Subtask {self.task}>'
 
+
+class Section(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True)
+    tasks = db.relationship('Task', backref='section', lazy=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
 # Admin view
 class MyModelView(ModelView):
@@ -81,6 +88,7 @@ admin = Admin(app)
 admin.add_view(MyModelView(Users, db.session))
 admin.add_view(MyModelView(Task, db.session))
 admin.add_view(MyModelView(Subtask, db.session))
+admin.add_view(MyModelView(Section, db.session))
 
 # Function to send task reminder
 # def send_task_reminder(task, user):
@@ -156,16 +164,16 @@ def dashboard():
 
     subtasks = Subtask.query.all()
     current_date = datetime.now().date()
-
+    sections = Section.query.filter_by(user_id=current_user.id).all()
     # Convert task dates from string to date objects for comparison
     for task in tasks:
         task.date = datetime.strptime(task.date, '%Y-%m-%d').date()
 
-    return render_template('dashboard.html', tasks=tasks, subtasks=subtasks, offset=offset, current_date=current_date)
+    return render_template('dashboard.html', tasks=tasks, subtasks=subtasks, offset=offset, current_date=current_date,sections=sections)
 
 
 
-@app.route("/add_task", methods=['POST'])
+@app.route('/add_task', methods=['POST'])
 @login_required
 def add_task():
     task_content = request.form.get('task')
@@ -173,22 +181,37 @@ def add_task():
     done = "no"
     description = request.form.get("description")
     priority = request.form.get("priority")
-    new_task = Task(task=task_content, date=task_date, done=done ,user_id=current_user.id ,description=description , priority=priority)
+    section_id = request.form.get('section_id')
+    new_task = Task(
+        task=task_content,
+        date=task_date,
+        done=done,
+        user_id=current_user.id,
+        description=description,
+        priority=priority,
+        section_id=section_id if section_id else None
+    )
     db.session.add(new_task)
     db.session.commit()
     return redirect(url_for('dashboard'))
 
-@app.route("/edit_task", methods=['POST'])
-@login_required
-def edit_task():
-    task_id = request.form.get('task_id')
+
+@app.route('/edit_task', methods=['GET', 'POST'])
+def edit_task(task_id):
     task = Task.query.get(task_id)
-    task.task = request.form.get('task')
-    task.description = request.form.get('description')
-    task.priority = request.form.get('priority')
-    task.date = request.form.get('date')
-    db.session.commit()
-    return redirect(url_for('dashboard'))
+    sections = Section.query.all()  # Fetch sections for the dropdown
+    if request.method == 'POST':
+        # Handle POST request to update the task
+        task.task_content = request.form.get('task')
+        task.description = request.form.get('description')
+        task.date = request.form.get('date')
+        task.priority = request.form.get('priority')
+        task.section_id = request.form.get('section_id')
+        db.session.commit()
+        return redirect(url_for('task_list'))
+
+    return render_template('edit_task.html', task=task, sections=sections)
+
 
 @app.route("/delete_task/<int:task_id>", methods=['POST'])
 @login_required
@@ -301,6 +324,35 @@ def completed_tasks():
 
     tasks = Task.query.all()
     return render_template('completed_tasks.html', tasks=tasks)
+
+
+@app.route('/add_section', methods=['GET', 'POST'])
+@login_required
+def add_section():
+    if request.method == 'POST':
+        section_name = request.form.get('section_name')
+        existing_section = Section.query.filter_by(name=section_name, user_id=current_user.id).first()
+        if existing_section:
+            flash('Section already exists!', 'error')
+            return redirect(url_for('add_section'))
+
+        new_section = Section(name=section_name, user_id=current_user.id)
+        db.session.add(new_section)
+        db.session.commit()
+        flash('Section added successfully!', 'success')
+        return redirect(url_for('dashboard'))
+    return render_template('add_section.html')
+
+
+
+@app.route('/section/<int:section_id>')
+@login_required
+def view_section(section_id):
+    section = Section.query.filter_by(id=section_id, user_id=current_user.id).first_or_404()
+    tasks = Task.query.filter_by(section_id=section_id).all()
+    subtasks = Subtask.query.all()  # Assuming you want to display all subtasks
+
+    return render_template('view_section.html', section=section, tasks=tasks, subtasks=subtasks)
 
 
 if __name__ == "__main__":

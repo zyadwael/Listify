@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ section.name }} Tasks</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="text-center">{{ section.name }} Tasks</h2>
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4>Tasks</h4>
+            </div>
+            <div class="card-body">
+                {% if tasks %}
+                    <ul class="list-group">
+                        {% for task in tasks %}
+                            <li class="list-group-item d-flex flex-column align-items-start {{ task.priority|lower }}">
+                                <div class="task-container d-flex justify-content-between align-items-center w-100">
+                                    <div class="d-flex align-items-center">
+                                        <input type="checkbox" class="task-checkbox" id="task_{{ task.id }}" data-task-id="{{ task.id }}" {% if task.done == 'yes' %}checked{% endif %}>
+                                        <label for="task_{{ task.id }}" class="custom-checkbox"></label>
+                                        <span class="task-text {% if task.done == 'yes' %}completed-task{% endif %}">{{ task.task }}</span>
+                                    </div>
+                                    <div class="task-actions">
+                                        <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editTaskModal" data-task-id="{{ task.id }}" data-task-content="{{ task.task }}" data-task-date="{{ task.date }}" data-task-priority="{{ task.priority }}">Edit</button>
+                                        <form method="POST" action="{{ url_for('delete_task', task_id=task.id) }}" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                        </form>
+                                        <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#addSubtaskModal" data-task-id="{{ task.id }}">Add Subtask</button>
+                                    </div>
+                                </div>
+
+                                <!-- Subtasks List under the task -->
+                                <div class="subtask-wrapper">
+                                    <ul class="list-group subtask mt-2 custom-subtask-list">
+                                        {% for subtask in subtasks %}
+                                            {% if subtask.task_id == task.id %}
+                                                <li class="list-group-item d-flex justify-content-between align-items-center {% if subtask.done == 'yes' %}completed{% endif %} custom-subtask-item">
+                                                    <input type="checkbox" class="subtask-checkbox" data-subtask-id="{{ subtask.id }}" {% if subtask.done == 'yes' %}checked{% endif %}>
+                                                    <span class="{% if subtask.done == 'yes' %}completed-task{% endif %}">{{ subtask.task }}</span>
+                                                    <div class="task-actions">
+                                                        <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editSubtaskModal" data-subtask-id="{{ subtask.id }}" data-subtask-content="{{ subtask.task }}" data-subtask-priority="{{ subtask.priority }}">Edit</button>
+                                                        <form method="POST" action="{{ url_for('delete_subtask', subtask_id=subtask.id) }}" style="display: inline;">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                                        </form>
+                                                    </div>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No tasks in this section. Add a new task.</p>
+                {% endif %}
+            </div>
+        </div>
+        <!-- Add Task Modal -->
+        <div class="text-center mt-4">
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addTaskModal">Add New Task</button>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
